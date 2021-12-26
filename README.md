@@ -1,2 +1,0 @@
-# krazy-koala
-Post ideas
