@@ -6,7 +6,16 @@
     <description>Recent content on Tales from the Command Line</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sat, 25 Dec 2021 16:16:14 -0700</lastBuildDate><atom:link href="https://seemiller.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Tue, 28 Dec 2021 17:23:54 -0700</lastBuildDate><atom:link href="https://seemiller.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Rails From the Closet to Kubernetes - SSL</title>
+      <link>https://seemiller.github.io/post/20211228-rails-from-the-closet-to-kubernetes-ssl/</link>
+      <pubDate>Tue, 28 Dec 2021 17:23:54 -0700</pubDate>
+      
+      <guid>https://seemiller.github.io/post/20211228-rails-from-the-closet-to-kubernetes-ssl/</guid>
+      <description>Rails - From the Closet To Kubernetes - SSL Part 3. Building and maintaining a web application back in the day was a lot of work. There were of course standards and best practices, but actual implementation was often quite difficult or laborious. As an example, let us consider securing a web application with TLS certificates. Years ago everything was harder when developing with a TLS certificate. Acquiring a certificate was difficult and expensive.</description>
+    </item>
+    
     <item>
       <title>Rails From the Closet to Kubernetes - Scaling</title>
       <link>https://seemiller.github.io/post/20211225-rails-from-the-closet-to-kubernetes-scaling/</link>
@@ -22,7 +31,7 @@
       <pubDate>Sat, 25 Dec 2021 15:43:53 -0700</pubDate>
       
       <guid>https://seemiller.github.io/post/20211225-rails-from-the-closet-to-kubernetes-deployment/</guid>
-      <description>Rails - From the Closet To Kubernetes - Deployment From mid-2007 until early 2020, I helped to develop and maintain a Ruby on Rails application, Pivotal Tracker. I got to see almost the entire lifecycle of this application. When I joined the Tracker team at Pivotal Labs in mid 2007, the app already had its core functionality, but it needed its edges rounded out. For our use as an internal project management application, those rough edges were ok, but we worked to round them out and make it a full-fledged product.</description>
+      <description>Rails - From the Closet To Kubernetes - Deployment Part 1. From mid-2007 until early 2020, I helped to develop and maintain a Ruby on Rails application, Pivotal Tracker. I got to see almost the entire lifecycle of this application. When I joined the Tracker team at Pivotal Labs in mid 2007, the app already had its core functionality, but it needed its edges rounded out. For our use as an internal project management application, those rough edges were ok, but we worked to round them out and make it a full-fledged product.</description>
     </item>
     
   </channel>

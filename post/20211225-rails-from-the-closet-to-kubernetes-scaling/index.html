@@ -79,22 +79,23 @@
 <li>Stateless - Rails applications don&rsquo;t necessarily need to track state locally, that&rsquo;s what the database is for!</li>
 <li>Do not require local storage - Rails applications can get all configuration from ConfigMap and Secret.</li>
 </ul>
-<p>In this post I want to show how to set up a Rails application running on Kubernetes with Knative serving demonstrating the scale to zero feature. I&rsquo;ve already created a Rails application that we can use for this, it&rsquo;s the Rails Blog application that is detailed in the <a href="https://guides.rubyonrails.org/v6.0/getting_started.html">Ruby on Rails - Getting Started</a> guide. I&rsquo;ve already followed the guide and committed it to a GitHub <a href="https://github.com/seemiller/rails-blog">repository</a>. This demonstration will be building off of the Tanzu Community Edition cluster that was deployed to AWS in <a href="https://example.com">Part 1</a>.</p>
+<p>In this post I want to show how to set up a Rails application running on Kubernetes with Knative serving demonstrating the scale to zero feature. I&rsquo;ve already created a Rails application that we can use for this, it&rsquo;s the Rails Blog application that is detailed in the <a href="https://guides.rubyonrails.org/v6.0/getting_started.html">Ruby on Rails - Getting Started</a> guide. I&rsquo;ve already followed the guide and committed it to a GitHub <a href="https://github.com/seemiller/rails-blog">repository</a>. This demonstration will be building off of the Tanzu Community Edition cluster that was deployed to AWS in <a href="https://talesfromthecommandline.com/post/20211225-rails-from-the-closet-to-kubernetes-deployment/">Part 1</a>.</p>
 <h2 id="setup-and-installation">Setup and Installation</h2>
 <p>If you haven&rsquo;t already cloned that repo, do that now, or use your own.</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">git clone git@github.com:seemiller/rails-blog.git
 cd rails-blog
-</code></pre></div><p>Before we install Knative, we need to first install <a href="https://projectcontour.io/">Contour</a> as a prerequisite. Contour is an open source <a href="https://kubernetes.io/docs/concepts/services-networking/ingress/">ingress</a> provider. I&rsquo;m using still using Tanzu Community Edition, so I&rsquo;ll install the Contour package.</p>
+</code></pre></div><p>Before we install Knative, we need to first install <a href="https://projectcontour.io/">Contour</a> as a prerequisite. Contour is an open source <a href="https://kubernetes.io/docs/concepts/services-networking/ingress/">ingress</a> provider. If you&rsquo;re continuing on from <a href="https://talesfromthecommandline.com/post/20211225-rails-from-the-closet-to-kubernetes-deployment/">Part 1</a>, this should already be installed. If not, go ahead and install it now..</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">tanzu package install contour <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>  --package-name contour.community.tanzu.vmware.com <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>  --version 1.18.1
 </code></pre></div><p>Since I am going to use a <a href="https://knative.dev/docs/serving/using-a-custom-domain/">custom domain</a>, <code>k8squid.com</code>, I&rsquo;ll need to create a configuration file for the knative-serving package and configure the Route53 DNS.</p>
-<p>Create the configuration file.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">cat knative-values.yaml &lt;&lt;EOF
-domain:
-  type: real
-  name: k8squid.com
-</code></pre></div><p>Get the external IP of the Envoy Load Balancer. On Route 53&rsquo;s Hosted Zone page, confgure the <code>A</code> record for your domain to use this IP.</p>
+<p>Create the configuration file. We&rsquo;ll use this later when installing knative-serving.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">cat <span style="color:#e6db74">&lt;&lt;EOF &gt; knative-values.yaml
+</span><span style="color:#e6db74">domain:
+</span><span style="color:#e6db74">  type: real
+</span><span style="color:#e6db74">  name: &lt;&lt;your-domain&gt;&gt;.com
+</span><span style="color:#e6db74">EOF</span>
+</code></pre></div><p>Get the external IP of the Envoy Load Balancer. On Route 53&rsquo;s Hosted Zone page, configure the <code>A</code> record for your domain to use this IP.</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">&gt; kubectl get service --namespace projectcontour
 
 NAME      TYPE           CLUSTER-IP       EXTERNAL-IP                                                              PORT<span style="color:#f92672">(</span>S<span style="color:#f92672">)</span>                      AGE
@@ -103,17 +104,17 @@ envoy     LoadBalancer   100.69.190.187   a7d4a55e...67870.us-east-1.elb.amazona
 </code></pre></div><p>With our prerequisites out of the way, we can install the Knative package.</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">tanzu package install knative-serving <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>  --package-name knative-serving.community.tanzu.vmware.com <span style="color:#ae81ff">\
-</span><span style="color:#ae81ff"></span>  --version 1.0.0
-  --values-file knative-serving.yaml
+</span><span style="color:#ae81ff"></span>  --version 1.0.0 <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  --values-file knative-values.yaml
 </code></pre></div><p>In another terminal, watch the knative-serving namespace to see the pods come up.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">kubectl get pods --namespace knative-serving --watch
-</code></pre></div><p>I still have my Rails blog application deployed from the previous walk-through. I&rsquo;ll need to remove that deployment, ingress and service before deploying the application with Knative.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">watch kubectl get pods --namespace knative-serving
+</code></pre></div><p>I still have my Rails blog application deployed from <a href="https://talesfromthecommandline.com/post/20211225-rails-from-the-closet-to-kubernetes-deployment/">Part 1</a>. I&rsquo;ll need to remove that deployment, ingress and service before deploying the application with Knative.</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">kubectl delete --filename kubernetes/rails-deployment.yaml
 kubectl delete --filename kubernetes/rails-ingress.yaml
 kubectl delete --filename kubernetes/rails-service.yaml
 </code></pre></div><h2 id="knative-service-deployment">Knative Service Deployment</h2>
 <p>With the original deployment cleaned up, we can deploy the application using Knative. For that we need a Knative service manifest. It does seem a bit odd to be deploying our application in a service instead of a deployment, but that&rsquo;s just how it is. This is basically our original deployment, now in a Knative manifest.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">&gt; cat kubernetes/rails-knative.yaml
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">&gt; cat kubernetes/rails-knative-service.yaml
 </code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">serving.knative.dev/v1</span>
 <span style="color:#f92672">kind</span>: <span style="color:#ae81ff">Service</span>
 <span style="color:#f92672">metadata</span>:
@@ -126,7 +127,7 @@ kubectl delete --filename kubernetes/rails-service.yaml
     <span style="color:#f92672">spec</span>:
       <span style="color:#f92672">containers</span>:
         - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">rails</span>
-          <span style="color:#f92672">image</span>: <span style="color:#ae81ff">ttl.sh/seemiller/rails-blog:1d</span>
+          <span style="color:#f92672">image</span>: <span style="color:#ae81ff">seemiller/rails-blog</span>
           <span style="color:#f92672">ports</span>:
           - <span style="color:#f92672">containerPort</span>: <span style="color:#ae81ff">3000</span>
           <span style="color:#f92672">env</span>:
@@ -163,6 +164,7 @@ rails-blog   http://rails-blog.blog.k8squid.com        rails-blog-0001   rails-b
 
 	<div class="pagination">
 		<a href="/post/20211225-rails-from-the-closet-to-kubernetes-deployment/" class="left arrow">&#8592;</a>
+		<a href="/post/20211228-rails-from-the-closet-to-kubernetes-ssl/" class="right arrow">&#8594;</a>
 
 		<a href="#" class="top">Top</a>
 	</div>
@@ -172,7 +174,7 @@ rails-blog   http://rails-blog.blog.k8squid.com        rails-blog-0001   rails-b
         		<footer>
 			
 			<span>
-			&copy; <time datetime="2021-12-25 18:02:55.624191 -0700 MST m=&#43;0.051723515">2021</time> . Made with <a href='https://gohugo.io'>Hugo</a> using the <a href='https://github.com/EmielH/tale-hugo/'>Tale</a> theme.
+			&copy; <time datetime="2021-12-31 12:20:27.434118 -0700 MST m=&#43;0.052602704">2021</time> . Made with <a href='https://gohugo.io'>Hugo</a> using the <a href='https://github.com/EmielH/tale-hugo/'>Tale</a> theme.
 			</span>
 		</footer>
 

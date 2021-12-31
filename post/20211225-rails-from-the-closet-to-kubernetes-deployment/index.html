@@ -53,7 +53,7 @@
 		
 
 		<h1 id="rails---from-the-closet-to-kubernetes---deployment">Rails - From the Closet To Kubernetes - Deployment</h1>
-<p>From mid-2007 until early 2020, I helped to develop and maintain a Ruby on Rails application, Pivotal Tracker. I got to see almost the entire lifecycle of this application. When I joined the Tracker team at Pivotal Labs in mid 2007, the app already had its core functionality, but it needed its edges rounded out. For our use as an internal project management application, those rough edges were ok, but we worked to round them out and make it a full-fledged product.</p>
+<p>Part 1. From mid-2007 until early 2020, I helped to develop and maintain a Ruby on Rails application, Pivotal Tracker. I got to see almost the entire lifecycle of this application. When I joined the Tracker team at Pivotal Labs in mid 2007, the app already had its core functionality, but it needed its edges rounded out. For our use as an internal project management application, those rough edges were ok, but we worked to round them out and make it a full-fledged product.</p>
 <p>Pivotal Tracker was wildly popular within the company, and our clients loved using it too. Almost too much. A common question when a client engagement neared its end was &ldquo;Can we continue to use Tracker?&rdquo;. Or when they told their friends about it and then the friends called up asking if they could use it. That was a difficult question to answer, as the answer was always no. Tracker was part of our secret sauce and was for internal use only or while there was an active engagement with a client. We also lacked a number of account management features, settings and permissions. Tracker performed its core project management mission admirably, but yeah, rough edges prevented us from allowing outside or public use.</p>
 <p>So we set out to smooth those rough edges. Plans were made to add those missing account management features so that we could safely allow outside use without fear of someone accessing a client project. We also added a subscription service so that we could charge users for use of the application. Companies have to keep the lights on somehow right?</p>
 <h2 id="in-the-closet">In the Closet</h2>
@@ -97,9 +97,8 @@
 <ul>
 <li>Apple Macbook Pro</li>
 <li>Amazon Web Services</li>
-<li>ttl.sh</li>
 <li>MySQL 8.0.27</li>
-<li>Rails 6.1.4.1</li>
+<li>Rails 6.1</li>
 <li>Ruby 3.0.2</li>
 <li>VMware Tanzu Community Edition</li>
 </ul>
@@ -143,9 +142,9 @@ cat Dockerfile
 </span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">CMD</span> [<span style="color:#e6db74">&#34;rails&#34;</span>, <span style="color:#e6db74">&#34;server&#34;</span>, <span style="color:#e6db74">&#34;-b&#34;</span>, <span style="color:#e6db74">&#34;0.0.0.0&#34;</span>]<span style="color:#960050;background-color:#1e0010">
 </span></code></pre></div><p>This is a pretty straight-forward Dockerfile. We start with the Ruby 3.0.2 base image and add in the needed things like node, yarn, and build tools. Some environment variables are set as well to indicate that this is our &ldquo;production&rdquo; environment and where to log Rails' output to. It is important to have Rails log to STDOUT as this is where Kubernetes expects all to output to go. Kubernetes can then pipe all this output into log monitoring services such as fluentd. Next we copy our application source code and run bundle to get our gems. In a full blown production pipeline this is a good place to &ldquo;pre-bake&rdquo; an image to speed things up. Assets are compiled and we expose port 3000 and give the command to run the server.</p>
 <p>Build the image and push it up.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">docker build --tag ttl.sh/seemiller/rails-blog:1d .
-
-docker push ttl.sh/seemiller/rails-blog:1d
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">docker build --tag <span style="color:#e6db74">&lt;&lt;your docker id&gt;&gt;/rails-blog .
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">docker push &lt;&lt;your</span> docker id&gt;&gt;/rails-blog
 </code></pre></div><h3 id="kubernetes-cluster">Kubernetes Cluster</h3>
 <p>For my Kubernetes cluster, I&rsquo;m going to use Tanzu Community Edition, from VMware. Guess I&rsquo;m a bit biased as to the choice of this distribution, so I&rsquo;ll admit that I have made some contributions to this distro.</p>
 <p>This post isn&rsquo;t about deploying Kubernetes. So to keep things on track, I&rsquo;ll refer you to the <a href="https://tanzucommunityedition.io/docs/latest/getting-started/">Getting Started</a> documentation for deploying Tanzu Community Edition. I used a managed cluster on Amazon Web Services. You are of course free to use any distribution that you prefer or have easy, and possibly free, access to.</p>
@@ -355,7 +354,7 @@ ZWZlMmU3YjdjZTVlNDkyNDczZjEK
 </span><span style="color:#e6db74">    Y2U5NDE4OWZhZGYwYTRhZTg2ZmZkM2NlMjEyZjJkYzEyMzFkMjI5ZTNjNDcwMjk4OGJmMjRj
 </span><span style="color:#e6db74">    MzAyMWNhZWJlNWI4ZTRmNWExZjQxM2JhYWVjMTU0MDRiZDE2MmNkYzZlY2M5NWZjMGQ1Njhi
 </span><span style="color:#e6db74">    MGFmZTljMTY1NTY1NGMyNWU4NzUK</span>    
-</code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">kubectl apply --filename kubernetes/rails-secret.yaml
+</code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">kubectl apply --filename kubernetes/rails-secrets.yaml
 </code></pre></div><blockquote>
 <p>For a real production application you of course would not want to commit your secret values to your source control. There are better and more secure means to handle secrets that are the subject of another story.</p>
 </blockquote>
@@ -381,7 +380,7 @@ ZWZlMmU3YjdjZTVlNDkyNDczZjEK
     <span style="color:#f92672">spec</span>:
       <span style="color:#f92672">containers</span>:
       - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">rails</span>
-        <span style="color:#f92672">image</span>: <span style="color:#ae81ff">ttl.sh/seemiller/rails-blog:1d</span>
+        <span style="color:#f92672">image</span>: <span style="color:#ae81ff">seemiller/rails-blog</span>
         <span style="color:#f92672">ports</span>:
         - <span style="color:#f92672">containerPort</span>: <span style="color:#ae81ff">3000</span>
         <span style="color:#f92672">env</span>:
@@ -401,8 +400,8 @@ ZWZlMmU3YjdjZTVlNDkyNDczZjEK
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">kubectl get deployments --namespace blog
 
 NAME    READY   UP-TO-DATE   AVAILABLE   AGE
-mysql   1/1     <span style="color:#ae81ff">1</span>            <span style="color:#ae81ff">1</span>           3d16h
-rails   1/1     <span style="color:#ae81ff">1</span>            <span style="color:#ae81ff">1</span>           3d
+mysql   1/1     <span style="color:#ae81ff">1</span>            <span style="color:#ae81ff">1</span>           3m25s
+rails   1/1     <span style="color:#ae81ff">1</span>            <span style="color:#ae81ff">1</span>           9s
 </code></pre></div><p>Our Rails application is now deployed to Kubernetes!</p>
 <h4 id="database-setup">Database Setup</h4>
 <p>As mentioned earlier, you can&rsquo;t do anything with Rails without a database. Unfortunately, I have yet to come across an elegant means of initializing the database. It feels crude, but a simple <code>exec</code> command will get us going. In a fully built out application with a CI/CD pipeline, you could run migrations in a Job as part of the deployment process, but that is overkill for us here at the moment.</p>
@@ -410,7 +409,11 @@ rails   1/1     <span style="color:#ae81ff">1</span>            <span style="col
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">kubectl exec deployment/rails -it --namespace blog -- rails db:create db:migrate
 </code></pre></div><h4 id="ingress">Ingress</h4>
 <p>The final step in making the Blog application available is to create an Ingress. An ingress creates a load balancer or endpoint that external processes can use to make requests of services running inside our cluster. Typically, this is for HTTP requests.</p>
-<p>You can create an ingress on the fly using the kubectl command. In this command, we are mapping all requests to this ingress to port 80 of the <code>rails</code> service. If you recall, we created a service for the Rails app that listens on port 80 and targets port 3000 on any object with an <code>app: rails</code> label.</p>
+<p>Before creating the ingress, we must first install an ingress controller. Ingress controllers are necessary to wire up the networking on your cluster to that of the underlying infrastructure, such as AWS or Azure. We&rsquo;ll use Contour for this.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">tanzu package install contour <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  --package-name contour.community.tanzu.vmware.com <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  --version 1.18.1
+</code></pre></div><p>You can create an ingress on the fly using the kubectl command. In this command, we are mapping all requests to this ingress to port 80 of the <code>rails</code> service. If you recall, we created a service for the Rails app that listens on port 80 and targets port 3000 on any object with an <code>app: rails</code> label.</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">kubectl create ingress rails --namespace blog --rule<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/*=rails:80&#34;</span>
 </code></pre></div><p>This creates our ingress object.</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">networking.k8s.io/v1</span>
@@ -434,7 +437,7 @@ rails   1/1     <span style="color:#ae81ff">1</span>            <span style="col
 
 NAME    CLASS    HOSTS   ADDRESS                                                                  PORTS   AGE
 rails   &lt;none&gt;   *       a65e9ab6f9ea449149814be66c783071-339151308.us-east-1.elb.amazonaws.com   <span style="color:#ae81ff">80</span>      5m
-</code></pre></div><p>Your IP address will vary depending on where your cluster is running. AWS provides a nice, unmemorable address that can easily be mapped to a domain name in their Route53 DNS service. In the spirit of keeping things simple, I&rsquo;m going to save the details of updating DNS and implementing TLS for another story.</p>
+</code></pre></div><p>Your IP address will vary depending on where your cluster is running. AWS provides a nice, unmemorable address that can easily be mapped to a domain name in their Route53 DNS service.</p>
 <p>With the ingress created, copy/paste the address into your favorite browser and enjoy the sample Rails Blog application.</p>
 <p>Learn more about <a href="https://kubernetes.io/docs/concepts/services-networking/ingress/">ingresses</a> in the official Kubernetes documentation.</p>
 <h2 id="conclusion">Conclusion</h2>
@@ -455,7 +458,7 @@ rails   &lt;none&gt;   *       a65e9ab6f9ea449149814be66c783071-339151308.us-eas
         		<footer>
 			
 			<span>
-			&copy; <time datetime="2021-12-25 18:02:55.63616 -0700 MST m=&#43;0.063692681">2021</time> . Made with <a href='https://gohugo.io'>Hugo</a> using the <a href='https://github.com/EmielH/tale-hugo/'>Tale</a> theme.
+			&copy; <time datetime="2021-12-31 12:20:27.448373 -0700 MST m=&#43;0.066857350">2021</time> . Made with <a href='https://gohugo.io'>Hugo</a> using the <a href='https://github.com/EmielH/tale-hugo/'>Tale</a> theme.
 			</span>
 		</footer>
 
